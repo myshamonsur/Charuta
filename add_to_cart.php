@@ -29,6 +29,7 @@ if ($quantity <= 0) {
 
 try {
 
+    // Check product
     $stmt = $pdo->prepare(
         "SELECT id, name, price, stock
          FROM products
@@ -43,51 +44,27 @@ try {
         die("Product not found.");
     }
 
+    // Check stock
     if ((int) $product["stock"] <= 0) {
         die("This product is out of stock.");
     }
 
+    // Do not allow quantity above stock
     if ($quantity > (int) $product["stock"]) {
         $quantity = (int) $product["stock"];
     }
 
-    $stmt = $pdo->prepare(
-        "SELECT id
-         FROM cart
-         WHERE user_id = ?
-         LIMIT 1"
-    );
-
-    $stmt->execute([$userId]);
-
-    $cart = $stmt->fetch(PDO::FETCH_ASSOC);
-
-    if (!$cart) {
-
-        $stmt = $pdo->prepare(
-            "INSERT INTO cart (user_id)
-             VALUES (?)"
-        );
-
-        $stmt->execute([$userId]);
-
-        $cartId = (int) $pdo->lastInsertId();
-
-    } else {
-
-        $cartId = (int) $cart["id"];
-    }
-
+    // Check if this product is already in user's cart
     $stmt = $pdo->prepare(
         "SELECT id, quantity
          FROM cart_items
-         WHERE cart_id = ?
+         WHERE user_id = ?
          AND product_id = ?
          LIMIT 1"
     );
 
     $stmt->execute([
-        $cartId,
+        $userId,
         $productId
     ]);
 
@@ -95,6 +72,7 @@ try {
 
     if ($cartItem) {
 
+        // Product already exists
         $newQuantity = (int) $cartItem["quantity"] + $quantity;
 
         if ($newQuantity > (int) $product["stock"]) {
@@ -104,24 +82,27 @@ try {
         $stmt = $pdo->prepare(
             "UPDATE cart_items
              SET quantity = ?
-             WHERE id = ?"
+             WHERE id = ?
+             AND user_id = ?"
         );
 
         $stmt->execute([
             $newQuantity,
-            (int) $cartItem["id"]
+            (int) $cartItem["id"],
+            $userId
         ]);
 
     } else {
 
+        // Add new product
         $stmt = $pdo->prepare(
             "INSERT INTO cart_items
-             (cart_id, product_id, quantity)
+             (user_id, product_id, quantity)
              VALUES (?, ?, ?)"
         );
 
         $stmt->execute([
-            $cartId,
+            $userId,
             $productId,
             $quantity
         ]);

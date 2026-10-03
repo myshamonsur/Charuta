@@ -3,14 +3,12 @@
 require_once __DIR__ . "/includes/session.php";
 require_once __DIR__ . "/includes/db.php";
 
-
 if (!isset($_SESSION["user_id"])) {
 
     header("Location: login.php");
     exit;
 
 }
-
 
 if ($_SERVER["REQUEST_METHOD"] !== "POST") {
 
@@ -19,9 +17,7 @@ if ($_SERVER["REQUEST_METHOD"] !== "POST") {
 
 }
 
-
 $userId = (int) $_SESSION["user_id"];
-
 
 $deliveryName =
     trim($_POST["delivery_name"] ?? "");
@@ -38,7 +34,6 @@ $paymentMethod =
         "Cash on Delivery"
     );
 
-
 if (
     $deliveryName === "" ||
     $phone === "" ||
@@ -49,34 +44,30 @@ if (
 
 }
 
-
 try {
 
     $pdo->beginTransaction();
-
 
     // Get cart items with current product information
 
     $stmt = $pdo->prepare("
         SELECT
-            c.product_id,
-            c.quantity,
+            ci.id AS cart_item_id,
+            ci.product_id,
+            ci.quantity,
             p.name,
             p.price,
             p.stock
-        FROM cart c
+        FROM cart_items ci
         INNER JOIN products p
-            ON c.product_id = p.id
-        WHERE c.user_id = ?
+            ON ci.product_id = p.id
+        WHERE ci.user_id = ?
         FOR UPDATE
     ");
 
     $stmt->execute([$userId]);
 
-    $cartItems = $stmt->fetchAll(
-        PDO::FETCH_ASSOC
-    );
-
+    $cartItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     if (!$cartItems) {
 
@@ -86,23 +77,20 @@ try {
 
     }
 
-
     $totalAmount = 0;
-
 
     // Check stock and calculate total
 
     foreach ($cartItems as $item) {
 
         $quantity =
-            (int)$item["quantity"];
+            (int) $item["quantity"];
 
         $stock =
-            (int)$item["stock"];
+            (int) $item["stock"];
 
         $price =
-            (float)$item["price"];
-
+            (float) $item["price"];
 
         if ($quantity <= 0) {
 
@@ -111,7 +99,6 @@ try {
             );
 
         }
-
 
         if ($quantity > $stock) {
 
@@ -124,12 +111,9 @@ try {
 
         }
 
-
         $totalAmount +=
             $price * $quantity;
-
     }
-
 
     // Insert order
 
@@ -148,10 +132,8 @@ try {
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     ");
 
-
     $paymentStatus = "Pending";
     $orderStatus = "Pending";
-
 
     $orderStmt->execute([
 
@@ -166,10 +148,8 @@ try {
 
     ]);
 
-
     $orderId =
         $pdo->lastInsertId();
-
 
     // Insert order items
 
@@ -184,7 +164,6 @@ try {
         VALUES (?, ?, ?, ?)
     ");
 
-
     // Reduce product stock
 
     $stockStmt = $pdo->prepare("
@@ -192,7 +171,6 @@ try {
         SET stock = stock - ?
         WHERE id = ?
     ");
-
 
     foreach ($cartItems as $item) {
 
@@ -205,21 +183,18 @@ try {
 
         ]);
 
-
         $stockStmt->execute([
 
             $item["quantity"],
             $item["product_id"]
 
         ]);
-
     }
 
-
-    // Clear user's cart
+    // Clear cart_items for this user
 
     $clearCartStmt = $pdo->prepare("
-        DELETE FROM cart
+        DELETE FROM cart_items
         WHERE user_id = ?
     ");
 
@@ -227,9 +202,7 @@ try {
         $userId
     ]);
 
-
     $pdo->commit();
-
 
     // Go to orders page
 
@@ -239,16 +212,13 @@ try {
 
     exit;
 
-
 } catch (Exception $e) {
-
 
     if ($pdo->inTransaction()) {
 
         $pdo->rollBack();
 
     }
-
 
     echo "<h2>Order could not be placed.</h2>";
 
@@ -259,5 +229,4 @@ try {
             "UTF-8"
         ) .
         "</p>";
-
 }

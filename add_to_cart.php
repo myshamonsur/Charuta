@@ -1,3 +1,4 @@
+```php
 <?php
 
 require_once __DIR__ . "/includes/session.php";
@@ -14,139 +15,127 @@ if ($_SERVER["REQUEST_METHOD"] !== "POST") {
 }
 
 $userId = (int)$_SESSION["user_id"];
-$productId = filter_input(
-    INPUT_POST,
-    "product_id",
-    FILTER_VALIDATE_INT
-);
 
-$quantity = filter_input(
-    INPUT_POST,
-    "quantity",
-    FILTER_VALIDATE_INT
-);
+$productId = isset($_POST["product_id"]) ? (int)$_POST["product_id"] : 0;
+$quantity = isset($_POST["quantity"]) ? (int)$_POST["quantity"] : 1;
 
-// Validate product ID and quantity
-if (
-    $productId === false ||
-    $productId === null ||
-    $productId < 1 ||
-    $quantity === false ||
-    $quantity === null ||
-    $quantity < 1
-) {
+if ($productId <= 0) {
     header("Location: products.php");
     exit;
 }
 
-// Get product information
-$stmt = $pdo->prepare(
-    "SELECT id, price, stock
-     FROM products
-     WHERE id = ?"
-);
-
-$stmt->execute([$productId]);
-
-$product = $stmt->fetch(PDO::FETCH_ASSOC);
-
-if (!$product) {
-    header("Location: products.php");
-    exit;
+if ($quantity <= 0) {
+    $quantity = 1;
 }
 
-// Check stock
-$stock = (int)$product["stock"];
+try {
 
-if ($stock < 1) {
-    header("Location: product_details.php?id=" . $productId);
-    exit;
-}
-
-// Quantity cannot be greater than stock
-if ($quantity > $stock) {
-    $quantity = $stock;
-}
-
-// Find user's cart
-$stmt = $pdo->prepare(
-    "SELECT id
-     FROM cart
-     WHERE user_id = ?"
-);
-
-$stmt->execute([$userId]);
-
-$cart = $stmt->fetch(PDO::FETCH_ASSOC);
-
-if (!$cart) {
-
-    // Create new cart
+    // Check product
     $stmt = $pdo->prepare(
-        "INSERT INTO cart (user_id)
-         VALUES (?)"
-    );
-
-    $stmt->execute([$userId]);
-
-    $cartId = (int)$pdo->lastInsertId();
-
-} else {
-
-    $cartId = (int)$cart["id"];
-}
-
-// Check if product already exists in cart
-$stmt = $pdo->prepare(
-    "SELECT id, quantity
-     FROM cart_items
-     WHERE cart_id = ?
-     AND product_id = ?"
-);
-
-$stmt->execute([
-    $cartId,
-    $productId
-]);
-
-$cartItem = $stmt->fetch(PDO::FETCH_ASSOC);
-
-if ($cartItem) {
-
-    $newQuantity =
-        (int)$cartItem["quantity"] + $quantity;
-
-    // Do not exceed available stock
-    if ($newQuantity > $stock) {
-        $newQuantity = $stock;
-    }
-
-    $stmt = $pdo->prepare(
-        "UPDATE cart_items
-         SET quantity = ?
+        "SELECT id, name, price, stock
+         FROM products
          WHERE id = ?"
     );
 
-    $stmt->execute([
-        $newQuantity,
-        (int)$cartItem["id"]
-    ]);
+    $stmt->execute([$productId]);
+    $product = $stmt->fetch(PDO::FETCH_ASSOC);
 
-} else {
+    if (!$product) {
+        die("Product not found.");
+    }
 
+    if ((int)$product["stock"] <= 0) {
+        die("This product is out of stock.");
+    }
+
+    // Make sure quantity does not exceed stock
+    if ($quantity > (int)$product["stock"]) {
+        $quantity = (int)$product["stock"];
+    }
+
+    // Find user's cart
     $stmt = $pdo->prepare(
-        "INSERT INTO cart_items
-         (cart_id, product_id, quantity)
-         VALUES (?, ?, ?)"
+        "SELECT id
+         FROM cart
+         WHERE user_id = ?
+         LIMIT 1"
+    );
+
+    $stmt->execute([$userId]);
+    $cart = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    // Create cart if it does not exist
+    if (!$cart) {
+
+        $stmt = $pdo->prepare(
+            "INSERT INTO cart (user_id)
+             VALUES (?)"
+        );
+
+        $stmt->execute([$userId]);
+
+        $cartId = (int)$pdo->lastInsertId();
+
+    } else {
+
+        $cartId = (int)$cart["id"];
+    }
+
+    // Check if product is already in cart
+    $stmt = $pdo->prepare(
+        "SELECT id, quantity
+         FROM cart_items
+         WHERE cart_id = ?
+         AND product_id = ?
+         LIMIT 1"
     );
 
     $stmt->execute([
         $cartId,
-        $productId,
-        $quantity
+        $productId
     ]);
-}
 
-// Go to cart
-header("Location: cart.php");
-exit;
+    $cartItem = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if ($cartItem) {
+
+        $newQuantity = (int)$cartItem["quantity"] + $quantity;
+
+        if ($newQuantity > (int)$product["stock"]) {
+            $newQuantity = (int)$product["stock"];
+        }
+
+        $stmt = $pdo->prepare(
+            "UPDATE cart_items
+             SET quantity = ?
+             WHERE id = ?"
+        );
+
+        $stmt->execute([
+            $newQuantity,
+            (int)$cartItem["id"]
+        ]);
+
+    } else {
+
+        $stmt = $pdo->prepare(
+            "INSERT INTO cart_items
+             (cart_id, product_id, quantity)
+             VALUES (?, ?, ?)"
+        );
+
+        $stmt->execute([
+            $cartId,
+            $productId,
+            $quantity
+        ]);
+    }
+
+    header("Location: cart.php");
+    exit;
+
+} catch (PDOException $e) {
+
+    die("Add to cart failed: " . $e->getMessage());
+}
+```

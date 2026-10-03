@@ -1,4 +1,3 @@
-```php
 <?php
 
 require_once __DIR__ . "/includes/session.php";
@@ -30,7 +29,6 @@ if ($quantity <= 0) {
 
 try {
 
-    // Get product
     $stmt = $pdo->prepare(
         "SELECT id, name, price, stock
          FROM products
@@ -45,17 +43,14 @@ try {
         die("Product not found.");
     }
 
-    // Check stock
     if ((int) $product["stock"] <= 0) {
         die("This product is out of stock.");
     }
 
-    // Limit quantity to available stock
     if ($quantity > (int) $product["stock"]) {
         $quantity = (int) $product["stock"];
     }
 
-    // Find user's cart
     $stmt = $pdo->prepare(
         "SELECT id
          FROM cart
@@ -67,7 +62,6 @@ try {
 
     $cart = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    // Create cart if it does not exist
     if (!$cart) {
 
         $stmt = $pdo->prepare(
@@ -84,7 +78,6 @@ try {
         $cartId = (int) $cart["id"];
     }
 
-    // Check whether product is already in cart
     $stmt = $pdo->prepare(
         "SELECT id, quantity
          FROM cart_items
@@ -100,7 +93,6 @@ try {
 
     $cartItem = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    // Product already exists in cart
     if ($cartItem) {
 
         $newQuantity = (int) $cartItem["quantity"] + $quantity;
@@ -122,7 +114,6 @@ try {
 
     } else {
 
-        // Add new product to cart
         $stmt = $pdo->prepare(
             "INSERT INTO cart_items
              (cart_id, product_id, quantity)
@@ -136,7 +127,6 @@ try {
         ]);
     }
 
-    // Go to cart
     header("Location: cart.php");
     exit;
 
@@ -144,4 +134,3 @@ try {
 
     die("Add to cart failed: " . $e->getMessage());
 }
-```

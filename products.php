@@ -1,4 +1,3 @@
-
 <?php
 session_start();
 require_once "includes/db.php";
@@ -8,19 +7,24 @@ $category = trim($_GET["category"] ?? "all");
 
 // Fetch categories
 $categoryStmt = $pdo->query(
-    "SELECT DISTINCT TRIM(category)
+    "SELECT TRIM(category) AS category
      FROM products
      WHERE category IS NOT NULL
-       AND TRIM(category) <> ''
-     ORDER BY category ASC"
+     AND TRIM(category) <> ''
+     GROUP BY TRIM(category)
+     ORDER BY TRIM(category) ASC"
 );
+
 $categories = $categoryStmt->fetchAll(PDO::FETCH_COLUMN);
 
-// Build query
+
+// Build product query
 $sql = "SELECT id, name, category, description, price, stock, image
         FROM products
         WHERE 1=1";
+
 $params = [];
+
 
 // Search
 if ($search !== "") {
@@ -29,27 +33,39 @@ if ($search !== "") {
     $params[] = "%{$search}%";
 }
 
-// Category
+
+// Category filter
 if ($category !== "" && strtolower($category) !== "all") {
     $sql .= " AND LOWER(TRIM(category)) = LOWER(TRIM(?))";
     $params[] = $category;
 }
 
+
+// Sort
 $sql .= " ORDER BY id DESC";
 
+
+// Execute query
 $stmt = $pdo->prepare($sql);
 $stmt->execute($params);
 $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
+
     <meta charset="UTF-8">
+
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>Products | Charuta</title>
+
     <link rel="stylesheet" href="assets/css/style.css">
 
     <style>
+
         header .brand-logo {
             display: flex;
             align-items: center;
@@ -119,6 +135,7 @@ $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
         }
 
         @media (max-width: 600px) {
+
             header .brand-logo {
                 width: 130px;
                 height: 55px;
@@ -134,77 +151,118 @@ $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 width: 100%;
                 box-sizing: border-box;
             }
+
         }
+
     </style>
+
 </head>
+
+
 <body>
 
+
 <header>
+
     <a href="index.php" class="brand-logo">
-        <img src="assets/images/Charuta_Logo.png"
-             alt="Charuta Beauty and Skincare">
+
+        <img
+            src="assets/images/Charuta_Logo.png"
+            alt="Charuta Beauty and Skincare"
+        >
+
     </a>
 
+
     <nav>
+
         <a href="index.php">Home</a>
+
         <a href="products.php">Products</a>
 
+
         <?php if (isset($_SESSION["user_id"])): ?>
+
             <a href="cart.php">Cart</a>
+
             <a href="orders.php">My Orders</a>
+
             <a href="logout.php">Logout</a>
+
         <?php else: ?>
+
             <a href="login.php">Login</a>
+
             <a href="register.php">Register</a>
+
         <?php endif; ?>
+
     </nav>
+
 </header>
 
+
+
 <main class="section">
+
     <h2>Our Products</h2>
 
     <p class="section-description">
         Find the right skincare products for your daily routine.
     </p>
 
-    <form method="GET" action="products.php" class="search-form">
+
+
+    <form
+        method="GET"
+        action="products.php"
+        class="search-form"
+    >
 
         <input
             type="search"
             name="search"
             placeholder="Search products..."
-            value="<?php
-                echo htmlspecialchars($search, ENT_QUOTES, 'UTF-8');
-            ?>"
+            value="<?php echo htmlspecialchars($search, ENT_QUOTES, 'UTF-8'); ?>"
         >
 
-        <select name="category"
-                onchange="this.form.submit()">
-            <option value="all"
+
+        <select
+            name="category"
+            onchange="this.form.submit()"
+        >
+
+            <option
+                value="all"
                 <?php
-                echo (
+                if (
                     $category === "" ||
                     strtolower($category) === "all"
-                ) ? "selected" : "";
-                ?>>
+                ) {
+                    echo "selected";
+                }
+                ?>
+            >
                 All Categories
             </option>
 
+
             <?php foreach ($categories as $cat): ?>
+
                 <option
-                    value="<?php
-                        echo htmlspecialchars(
-                            $cat,
-                            ENT_QUOTES,
-                            'UTF-8'
-                        );
-                    ?>"
+                    value="<?php echo htmlspecialchars($cat, ENT_QUOTES, 'UTF-8'); ?>"
                     <?php
-                    echo strcasecmp(
-                        trim($category),
-                        trim($cat)
-                    ) === 0 ? "selected" : "";
-                    ?>>
+                    if (
+                        strcasecmp(
+                            trim($category),
+                            trim($cat)
+                        ) === 0
+                    ) {
+                        echo "selected";
+                    }
+                    ?>
+                >
+
                     <?php
                     echo htmlspecialchars(
                         $cat,
@@ -212,56 +270,85 @@ $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
                         'UTF-8'
                     );
                     ?>
+
                 </option>
+
             <?php endforeach; ?>
+
         </select>
 
-        <button type="submit" class="btn">Search</button>
 
-        <a href="products.php" class="btn secondary-btn">
+        <button type="submit" class="btn">
+            Search
+        </button>
+
+
+        <a
+            href="products.php"
+            class="btn secondary-btn"
+        >
             Clear
         </a>
+
     </form>
 
+
+
     <div class="product-grid">
-        <?php if (!empty($products)): ?>
+
+
+        <?php if (count($products) > 0): ?>
+
 
             <?php foreach ($products as $product): ?>
+
                 <?php
+
                 $imageName = basename(
-                    trim((string)($product["image"] ?? ""))
+                    trim(
+                        (string)($product["image"] ?? "")
+                    )
                 );
 
-                $imagePath = __DIR__ . "/assets/images/" . $imageName;
-                $imageUrl = "assets/images/" .
+                $imagePath =
+                    __DIR__ .
+                    "/assets/images/" .
+                    $imageName;
+
+                $imageUrl =
+                    "assets/images/" .
                     rawurlencode($imageName);
+
                 ?>
 
+
                 <div class="product-card">
+
+
                     <?php if (
                         $imageName !== "" &&
                         is_file($imagePath)
                     ): ?>
+
                         <img
                             class="product-image"
-                            src="<?php
-                                echo htmlspecialchars(
-                                    $imageUrl,
-                                    ENT_QUOTES,
-                                    'UTF-8'
-                                );
-                            ?>"
-                            alt="<?php
-                                echo htmlspecialchars(
-                                    $product["name"],
-                                    ENT_QUOTES,
-                                    'UTF-8'
-                                );
-                            ?>"
+                            src="<?php echo htmlspecialchars(
+                                $imageUrl,
+                                ENT_QUOTES,
+                                'UTF-8'
+                            ); ?>"
+                            alt="<?php echo htmlspecialchars(
+                                $product["name"],
+                                ENT_QUOTES,
+                                'UTF-8'
+                            ); ?>"
                             loading="lazy"
                         >
+
                     <?php else: ?>
+
                         <div class="product-placeholder">
+
                             <?php
                             echo htmlspecialchars(
                                 $product["category"] ?? "Product",
@@ -269,10 +356,14 @@ $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                 'UTF-8'
                             );
                             ?>
+
                         </div>
+
                     <?php endif; ?>
 
+
                     <h3>
+
                         <?php
                         echo htmlspecialchars(
                             $product["name"],
@@ -280,10 +371,14 @@ $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
                             'UTF-8'
                         );
                         ?>
+
                     </h3>
 
+
                     <p>
+
                         Category:
+
                         <?php
                         echo htmlspecialchars(
                             $product["category"] ?? "",
@@ -291,63 +386,114 @@ $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
                             'UTF-8'
                         );
                         ?>
+
                     </p>
 
+
                     <p>
+
                         <?php
-                        $description = $product["description"] ?? "";
+
+                        $description =
+                            $product["description"] ?? "";
+
+                        if (strlen($description) > 120) {
+
+                            $description =
+                                substr(
+                                    $description,
+                                    0,
+                                    120
+                                ) . "...";
+
+                        }
+
                         echo htmlspecialchars(
-                            strlen($description) > 120
-                                ? substr($description, 0, 120) . "..."
-                                : $description,
+                            $description,
                             ENT_QUOTES,
                             'UTF-8'
                         );
+
                         ?>
+
                     </p>
 
+
                     <div class="price">
+
                         ৳<?php
+
                         echo number_format(
                             (float)$product["price"],
                             2
                         );
+
                         ?>
+
                     </div>
 
+
                     <p class="stock">
+
                         <?php if ((int)$product["stock"] > 0): ?>
-                            In Stock: <?php echo (int)$product["stock"]; ?>
+
+                            In Stock:
+                            <?php echo (int)$product["stock"]; ?>
+
                         <?php else: ?>
+
                             Out of Stock
+
                         <?php endif; ?>
+
                     </p>
+
 
                     <a
                         class="btn"
-                        href="product_details.php?id=<?php
-                            echo (int)$product["id"];
-                        ?>"
+                        href="product_details.php?id=<?php echo (int)$product["id"]; ?>"
                     >
                         View Details
                     </a>
+
+
                 </div>
+
+
             <?php endforeach; ?>
 
+
         <?php else: ?>
+
             <p class="empty-message">
-                No products found. Try another search or category.
+
+                No products found.
+                Try another search or category.
+
             </p>
+
         <?php endif; ?>
+
+
     </div>
+
 </main>
 
+
+
 <footer>
+
     <p>
+
         &copy; <?php echo date("Y"); ?>
+
         Charuta. All rights reserved.
+
     </p>
+
 </footer>
 
+
 </body>
+
 </html>

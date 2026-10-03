@@ -1,9 +1,13 @@
 <?php
 
+require_once __DIR__ . "/includes/session.php";
 require_once __DIR__ . "/includes/db.php";
 
 $message = "";
 $messageType = "";
+
+$name = "";
+$email = "";
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
@@ -11,40 +15,36 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $email = trim($_POST["email"] ?? "");
     $password = $_POST["password"] ?? "";
 
-    // Basic validation
     if ($name === "" || $email === "" || $password === "") {
 
         $message = "Please fill in all fields.";
-        $messageType = "error";
+        $messageType = "";
 
     } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
 
         $message = "Please enter a valid email address.";
-        $messageType = "error";
+        $messageType = "";
 
     } elseif (strlen($password) < 6) {
 
         $message = "Password must be at least 6 characters.";
-        $messageType = "error";
+        $messageType = "";
 
     } else {
 
         try {
 
-            // Check if email already exists
-            $stmt = $pdo->prepare("
-                SELECT id
-                FROM users
-                WHERE email = ?
-                LIMIT 1
-            ");
+            // Check whether email already exists
+            $checkStmt = $pdo->prepare(
+                "SELECT id FROM users WHERE email = ? LIMIT 1"
+            );
 
-            $stmt->execute([$email]);
+            $checkStmt->execute([$email]);
 
-            if ($stmt->fetch()) {
+            if ($checkStmt->fetch()) {
 
-                $message = "This email is already registered. Please login.";
-                $messageType = "error";
+                $message = "An account with this email already exists.";
+                $messageType = "";
 
             } else {
 
@@ -55,13 +55,12 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 );
 
                 // Insert new user
-                $stmt = $pdo->prepare("
-                    INSERT INTO users
-                    (name, email, password)
-                    VALUES (?, ?, ?)
-                ");
+                $insertStmt = $pdo->prepare(
+                    "INSERT INTO users (name, email, password)
+                     VALUES (?, ?, ?)"
+                );
 
-                $stmt->execute([
+                $insertStmt->execute([
                     $name,
                     $email,
                     $hashedPassword
@@ -78,7 +77,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         } catch (PDOException $e) {
 
             $message = "Registration failed. Please try again.";
-            $messageType = "error";
+            $messageType = "";
         }
     }
 }
@@ -91,117 +90,145 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 <head>
 
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Register | Charuta</title>
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
 
-    <link rel="stylesheet" href="assets/css/style.css">
+    <title>Register - Charuta</title>
+
+    <link
+        rel="stylesheet"
+        href="assets/css/style.css"
+    >
 
 </head>
 
 <body>
 
-    <div class="auth-container">
+<header>
 
-        <div class="auth-box">
+    <a href="index.php" class="brand-logo">
 
-            <img
-                src="assets/images/Charuta_Logo.png"
-                alt="Charuta Logo"
-                class="auth-logo"
+        <img
+            src="assets/images/Charuta_Logo.png"
+            alt="Charuta Logo"
+        >
+
+    </a>
+
+    <nav>
+
+        <a href="index.php">Home</a>
+
+        <a href="products.php">Products</a>
+
+        <a href="login.php">Login</a>
+
+    </nav>
+
+</header>
+
+
+<section class="auth-section">
+
+    <div class="auth-card">
+
+        <h2>Create Account</h2>
+
+        <p class="auth-subtitle">
+            Register to continue with Charuta
+        </p>
+
+
+        <?php if ($message !== ""): ?>
+
+            <div class="message <?php echo htmlspecialchars($messageType); ?>">
+
+                <?php echo htmlspecialchars($message); ?>
+
+            </div>
+
+        <?php endif; ?>
+
+
+        <form method="POST" action="register.php">
+
+            <label for="name">
+                Full Name
+            </label>
+
+            <input
+                type="text"
+                id="name"
+                name="name"
+                value="<?php echo htmlspecialchars($name); ?>"
+                placeholder="Enter your full name"
+                required
             >
 
-            <h2>Create Account</h2>
 
-            <p class="auth-subtitle">
-                Register to continue with Charuta
-            </p>
+            <label for="email">
+                Email
+            </label>
 
-            <?php if ($message !== ""): ?>
+            <input
+                type="email"
+                id="email"
+                name="email"
+                value="<?php echo htmlspecialchars($email); ?>"
+                placeholder="Enter your email"
+                required
+            >
 
-                <div
-                    class="message <?php echo htmlspecialchars($messageType); ?>"
-                >
-                    <?php echo htmlspecialchars($message); ?>
-                </div>
 
-            <?php endif; ?>
+            <label for="password">
+                Password
+            </label>
 
-            <form method="POST" action="register.php">
+            <input
+                type="password"
+                id="password"
+                name="password"
+                placeholder="Minimum 6 characters"
+                minlength="6"
+                required
+            >
 
-                <div class="form-group">
 
-                    <label for="name">
-                        Full Name
-                    </label>
+            <button
+                type="submit"
+                class="btn form-btn"
+            >
+                Register
+            </button>
 
-                    <input
-                        type="text"
-                        id="name"
-                        name="name"
-                        value="<?php echo htmlspecialchars($name ?? ""); ?>"
-                        placeholder="Enter your full name"
-                        required
-                    >
+        </form>
 
-                </div>
 
-                <div class="form-group">
+        <p class="auth-link">
 
-                    <label for="email">
-                        Email
-                    </label>
+            Already have an account?
 
-                    <input
-                        type="email"
-                        id="email"
-                        name="email"
-                        value="<?php echo htmlspecialchars($email ?? ""); ?>"
-                        placeholder="Enter your email"
-                        required
-                    >
+            <a href="login.php">
+                Login
+            </a>
 
-                </div>
-
-                <div class="form-group">
-
-                    <label for="password">
-                        Password
-                    </label>
-
-                    <input
-                        type="password"
-                        id="password"
-                        name="password"
-                        placeholder="Enter your password"
-                        minlength="6"
-                        required
-                    >
-
-                </div>
-
-                <button
-                    type="submit"
-                    class="auth-button"
-                >
-                    Register
-                </button>
-
-            </form>
-
-            <p class="auth-footer">
-
-                Already have an account?
-
-                <a href="login.php">
-                    Login
-                </a>
-
-            </p>
-
-        </div>
+        </p>
 
     </div>
+
+</section>
+
+
+<footer>
+
+    <p>
+        &copy; <?php echo date("Y"); ?> Charuta. All rights reserved.
+    </p>
+
+</footer>
 
 </body>
 

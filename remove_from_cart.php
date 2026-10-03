@@ -1,34 +1,32 @@
 <?php
-session_start();
-require_once "includes/db.php";
+
+require_once __DIR__ . "/includes/session.php";
+require_once __DIR__ . "/includes/db.php";
 
 if (!isset($_SESSION["user_id"])) {
     header("Location: login.php");
     exit;
 }
 
-if (
-    !isset($_GET["id"]) ||
-    !ctype_digit($_GET["id"])
-) {
+$userId = (int) $_SESSION["user_id"];
+
+if (!isset($_GET["id"]) || !ctype_digit($_GET["id"])) {
     header("Location: cart.php");
     exit;
 }
 
-$cartId = (int)$_GET["id"];
-$userId = (int)$_SESSION["user_id"];
+$cartItemId = (int) $_GET["id"];
 
 $stmt = $pdo->prepare(
-    "DELETE FROM cart
+    "DELETE FROM cart_items
      WHERE id = ?
-       AND user_id = ?"
+     AND user_id = ?"
 );
 
 $stmt->execute([
-    $cartId,
+    $cartItemId,
     $userId
 ]);
 
 header("Location: cart.php");
 exit;
-?>

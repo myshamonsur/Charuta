@@ -1,17 +1,24 @@
 <?php
 
-session_start();
-require_once "includes/db.php";
+require_once __DIR__ . "/includes/session.php";
+require_once __DIR__ . "/includes/db.php";
+
 
 // User must be logged in
+
 if (!isset($_SESSION["user_id"])) {
+
     header("Location: login.php");
     exit;
+
 }
+
 
 $userId = (int) $_SESSION["user_id"];
 
+
 // Get user's orders
+
 $stmt = $pdo->prepare("
     SELECT
         id,
@@ -30,7 +37,9 @@ $stmt = $pdo->prepare("
 
 $stmt->execute([$userId]);
 
-$orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$orders = $stmt->fetchAll(
+    PDO::FETCH_ASSOC
+);
 
 ?>
 
@@ -55,20 +64,12 @@ $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     <style>
 
-        /* =========================
-           LOGO
-        ========================= */
-
         .site-logo {
             height: 50px;
             width: auto;
             display: block;
         }
 
-
-        /* =========================
-           ORDERS SECTION
-        ========================= */
 
         .orders-section {
             padding: 50px 20px;
@@ -83,10 +84,6 @@ $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
             margin-bottom: 30px;
         }
 
-
-        /* =========================
-           MESSAGES
-        ========================= */
 
         .success-message {
             background: #e8f7e8;
@@ -104,10 +101,6 @@ $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
             margin-bottom: 25px;
         }
 
-
-        /* =========================
-           ORDER CARD
-        ========================= */
 
         .order-card {
             background: #ffffff;
@@ -137,10 +130,6 @@ $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
         }
 
 
-        /* =========================
-           ORDER INFORMATION
-        ========================= */
-
         .order-info {
             margin-top: 20px;
         }
@@ -159,10 +148,6 @@ $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
             flex: 1;
         }
 
-
-        /* =========================
-           STATUS
-        ========================= */
 
         .status-row {
             display: flex;
@@ -205,10 +190,6 @@ $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
         }
 
 
-        /* =========================
-           ORDER TOTAL
-        ========================= */
-
         .order-total {
             margin-top: 20px;
             padding-top: 20px;
@@ -219,10 +200,6 @@ $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
             font-weight: 700;
         }
 
-
-        /* =========================
-           CANCEL ORDER
-        ========================= */
 
         .cancel-order {
             margin-top: 20px;
@@ -246,10 +223,6 @@ $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
         }
 
 
-        /* =========================
-           EMPTY ORDERS
-        ========================= */
-
         .empty-orders {
             background: #ffffff;
             padding: 40px;
@@ -270,10 +243,6 @@ $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
             border-radius: 7px;
         }
 
-
-        /* =========================
-           MOBILE
-        ========================= */
 
         @media (max-width: 600px) {
 
@@ -308,10 +277,6 @@ $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 <body>
 
-
-<!-- =========================
-     HEADER
-========================= -->
 
 <header>
 
@@ -361,20 +326,15 @@ $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
 </header>
 
 
-<!-- =========================
-     ORDERS
-========================= -->
-
 <section class="orders-section">
 
     <div class="orders-container">
+
 
         <h1>
             My Orders
         </h1>
 
-
-        <!-- Order placed message -->
 
         <?php if (isset($_GET["success"])): ?>
 
@@ -387,20 +347,17 @@ $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
         <?php endif; ?>
 
 
-        <!-- Order cancelled message -->
-
         <?php if (isset($_GET["cancelled"])): ?>
 
             <div class="success-message">
 
-                Your order has been cancelled successfully and the product stock has been restored.
+                Your order has been cancelled successfully
+                and the product stock has been restored.
 
             </div>
 
         <?php endif; ?>
 
-
-        <!-- Error message -->
 
         <?php if (isset($_GET["error"])): ?>
 
@@ -408,7 +365,9 @@ $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
                 <?php
                 echo htmlspecialchars(
-                    $_GET["error"]
+                    $_GET["error"],
+                    ENT_QUOTES,
+                    "UTF-8"
                 );
                 ?>
 
@@ -419,8 +378,6 @@ $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         <?php if (!$orders): ?>
 
-
-            <!-- No orders -->
 
             <div class="empty-orders">
 
@@ -447,12 +404,9 @@ $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
             <?php foreach ($orders as $order): ?>
 
+
                 <div class="order-card">
 
-
-                    <!-- =========================
-                         ORDER HEADER
-                    ========================= -->
 
                     <div class="order-header">
 
@@ -461,7 +415,7 @@ $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
                             Order #
 
                             <?php
-                            echo (int) $order["id"];
+                            echo (int)$order["id"];
                             ?>
 
                         </div>
@@ -477,7 +431,9 @@ $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                     strtotime(
                                         $order["created_at"]
                                     )
-                                )
+                                ),
+                                ENT_QUOTES,
+                                "UTF-8"
                             );
 
                             ?>
@@ -486,10 +442,6 @@ $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
                     </div>
 
-
-                    <!-- =========================
-                         DELIVERY INFORMATION
-                    ========================= -->
 
                     <div class="order-info">
 
@@ -503,11 +455,11 @@ $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
                             <div class="info-value">
 
                                 <?php
-
                                 echo htmlspecialchars(
-                                    $order["delivery_name"]
+                                    $order["delivery_name"],
+                                    ENT_QUOTES,
+                                    "UTF-8"
                                 );
-
                                 ?>
 
                             </div>
@@ -524,11 +476,11 @@ $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
                             <div class="info-value">
 
                                 <?php
-
                                 echo htmlspecialchars(
-                                    $order["phone"]
+                                    $order["phone"],
+                                    ENT_QUOTES,
+                                    "UTF-8"
                                 );
-
                                 ?>
 
                             </div>
@@ -545,13 +497,13 @@ $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
                             <div class="info-value">
 
                                 <?php
-
                                 echo nl2br(
                                     htmlspecialchars(
-                                        $order["address"]
+                                        $order["address"],
+                                        ENT_QUOTES,
+                                        "UTF-8"
                                     )
                                 );
-
                                 ?>
 
                             </div>
@@ -568,11 +520,11 @@ $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
                             <div class="info-value">
 
                                 <?php
-
                                 echo htmlspecialchars(
-                                    $order["payment_method"]
+                                    $order["payment_method"],
+                                    ENT_QUOTES,
+                                    "UTF-8"
                                 );
-
                                 ?>
 
                             </div>
@@ -583,73 +535,69 @@ $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
                     </div>
 
 
-                    <!-- =========================
-                         STATUS
-                    ========================= -->
+                    <?php
+
+                    $paymentStatus =
+                        strtolower(
+                            trim(
+                                $order["payment_status"]
+                            )
+                        );
+
+                    $orderStatus =
+                        strtolower(
+                            trim(
+                                $order["order_status"]
+                            )
+                        );
+
+                    ?>
+
 
                     <div class="status-row">
 
 
-                        <?php
-
-                        $paymentStatus =
-                            strtolower(
-                                trim(
-                                    $order["payment_status"]
-                                )
-                            );
-
-                        $orderStatus =
-                            strtolower(
-                                trim(
-                                    $order["order_status"]
-                                )
-                            );
-
-                        ?>
-
-
-                        <!-- Payment Status -->
-
                         <span
                             class="status
                             <?php
-
                             echo $paymentStatus === "paid"
                                 ? "status-paid"
                                 : "status-pending";
-
                             ?>"
                         >
 
                             Payment:
 
                             <?php
-
                             echo htmlspecialchars(
-                                $order["payment_status"]
+                                $order["payment_status"],
+                                ENT_QUOTES,
+                                "UTF-8"
                             );
-
                             ?>
 
                         </span>
 
 
-                        <!-- Order Status -->
-
                         <span
                             class="status
                             <?php
 
-                            if ($orderStatus === "delivered") {
+                            if (
+                                $orderStatus === "delivered"
+                            ) {
 
                                 echo "status-delivered";
 
-                            } elseif ($orderStatus === "processing") {
+                            } elseif (
+                                $orderStatus === "processing"
+                            ) {
 
                                 echo "status-processing";
 
-                            } elseif ($orderStatus === "cancelled") {
+                            } elseif (
+                                $orderStatus === "cancelled"
+                            ) {
 
                                 echo "status-cancelled";
 
@@ -665,11 +613,11 @@ $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
                             Order:
 
                             <?php
-
                             echo htmlspecialchars(
-                                $order["order_status"]
+                                $order["order_status"],
+                                ENT_QUOTES,
+                                "UTF-8"
                             );
-
                             ?>
 
                         </span>
@@ -677,10 +625,6 @@ $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
                     </div>
 
-
-                    <!-- =========================
-                         TOTAL
-                    ========================= -->
 
                     <div class="order-total">
 
@@ -690,10 +634,10 @@ $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
                         <span>
 
-                            <?php
+                            ৳<?php
 
                             echo number_format(
-                                (float) $order["total_amount"],
+                                (float)$order["total_amount"],
                                 2
                             );
 
@@ -703,10 +647,6 @@ $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
                     </div>
 
-
-                    <!-- =========================
-                         CANCEL BUTTON
-                    ========================= -->
 
                     <?php
 
@@ -730,7 +670,9 @@ $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                 <input
                                     type="hidden"
                                     name="order_id"
-                                    value="<?php echo (int) $order["id"]; ?>"
+                                    value="<?php
+                                        echo (int)$order["id"];
+                                    ?>"
                                 >
 
                                 <button
@@ -748,6 +690,7 @@ $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 
                 </div>
+
 
             <?php endforeach; ?>
 

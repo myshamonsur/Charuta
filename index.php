@@ -1,6 +1,7 @@
 <?php
-session_start();
-require_once "includes/db.php";
+
+require_once __DIR__ . "/includes/session.php";
+require_once __DIR__ . "/includes/db.php";
 
 // Get latest 4 products
 $stmt = $pdo->query(
@@ -11,19 +12,31 @@ $stmt = $pdo->query(
 );
 
 $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
+
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
 
     <title>Charuta | Beauty & Skincare</title>
 
-    <link rel="stylesheet" href="assets/css/style.css">
+    <link
+        rel="stylesheet"
+        href="assets/css/style.css"
+    >
 
     <style>
+
         /* Charuta logo */
+
         header .brand-logo {
             display: flex;
             align-items: center;
@@ -42,7 +55,9 @@ $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
             object-fit: contain;
         }
 
+
         /* Product image */
+
         .product-image {
             display: block;
             width: 100%;
@@ -53,7 +68,9 @@ $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
             margin-bottom: 12px;
         }
 
-        /* If image is missing */
+
+        /* Missing image */
+
         .product-placeholder {
             width: 100%;
             height: 220px;
@@ -66,53 +83,91 @@ $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
             color: #76515e;
         }
 
+
         .product-card {
             overflow: hidden;
         }
 
+
         @media (max-width: 600px) {
+
             header .brand-logo {
                 width: 130px;
                 height: 55px;
             }
+
         }
+
     </style>
+
 </head>
+
 
 <body>
 
+
 <header>
 
-    <a href="index.php" class="brand-logo">
+    <a
+        href="index.php"
+        class="brand-logo"
+    >
+
         <img
             src="assets/images/Charuta_Logo.png"
             alt="Charuta Beauty and Skincare"
         >
+
     </a>
 
+
     <nav>
-        <a href="index.php">Home</a>
-        <a href="products.php">Products</a>
+
+        <a href="index.php">
+            Home
+        </a>
+
+        <a href="products.php">
+            Products
+        </a>
+
 
         <?php if (isset($_SESSION["user_id"])): ?>
 
-            <a href="cart.php">Cart</a>
-            <a href="orders.php">My Orders</a>
-            <a href="logout.php">Logout</a>
+            <a href="cart.php">
+                Cart
+            </a>
+
+            <a href="orders.php">
+                My Orders
+            </a>
+
+            <a href="logout.php">
+                Logout
+            </a>
 
         <?php else: ?>
 
-            <a href="login.php">Login</a>
-            <a href="register.php">Register</a>
+            <a href="login.php">
+                Login
+            </a>
+
+            <a href="register.php">
+                Register
+            </a>
 
         <?php endif; ?>
+
     </nav>
+
 </header>
 
 
 <main>
 
+
     <!-- Hero Section -->
+
     <section class="hero">
 
         <div class="hero-content">
@@ -131,7 +186,10 @@ $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 Find the right products for your daily needs.
             </p>
 
-            <a href="products.php" class="btn">
+            <a
+                href="products.php"
+                class="btn"
+            >
                 Shop Now
             </a>
 
@@ -141,6 +199,7 @@ $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 
     <!-- Featured Products -->
+
     <section class="section">
 
         <h2>
@@ -154,40 +213,38 @@ $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         <div class="product-grid">
 
+
             <?php if (!empty($products)): ?>
+
 
                 <?php foreach ($products as $product): ?>
 
+
                     <?php
-                    /*
-                     * Get image filename from database.
-                     * basename() prevents folder path problems.
-                     */
+
                     $imageName = basename(
-                        trim((string)($product["image"] ?? ""))
+                        trim(
+                            (string)($product["image"] ?? "")
+                        )
                     );
 
-                    /*
-                     * Physical file path.
-                     * This checks whether the image really exists.
-                     */
-                    $imagePath = __DIR__ .
+                    $imagePath =
+                        __DIR__ .
                         "/assets/images/" .
                         $imageName;
 
-                    /*
-                     * Browser URL.
-                     * rawurlencode() handles spaces and special
-                     * characters in filenames.
-                     */
-                    $imageUrl = "assets/images/" .
+                    $imageUrl =
+                        "assets/images/" .
                         rawurlencode($imageName);
+
                     ?>
 
 
                     <div class="product-card">
 
+
                         <!-- Product Image -->
+
                         <?php if (
                             $imageName !== "" &&
                             is_file($imagePath)
@@ -199,14 +256,14 @@ $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                     echo htmlspecialchars(
                                         $imageUrl,
                                         ENT_QUOTES,
-                                        'UTF-8'
+                                        "UTF-8"
                                     );
                                 ?>"
                                 alt="<?php
                                     echo htmlspecialchars(
                                         $product["name"],
                                         ENT_QUOTES,
-                                        'UTF-8'
+                                        "UTF-8"
                                     );
                                 ?>"
                                 loading="lazy"
@@ -215,43 +272,52 @@ $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
                         <?php else: ?>
 
                             <div class="product-placeholder">
+
                                 <?php
                                 echo htmlspecialchars(
                                     $product["category"] ?? "Product",
                                     ENT_QUOTES,
-                                    'UTF-8'
+                                    "UTF-8"
                                 );
                                 ?>
+
                             </div>
 
                         <?php endif; ?>
 
 
                         <!-- Product Name -->
+
                         <h3>
+
                             <?php
                             echo htmlspecialchars(
                                 $product["name"],
                                 ENT_QUOTES,
-                                'UTF-8'
+                                "UTF-8"
                             );
                             ?>
+
                         </h3>
 
 
                         <!-- Category -->
+
                         <p>
+
                             <?php
                             echo htmlspecialchars(
                                 $product["category"] ?? "",
                                 ENT_QUOTES,
-                                'UTF-8'
+                                "UTF-8"
                             );
                             ?>
+
                         </p>
 
 
                         <!-- Description -->
+
                         <p>
 
                             <?php
@@ -259,16 +325,21 @@ $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
                             $description =
                                 $product["description"] ?? "";
 
-                            echo htmlspecialchars(
-                                strlen($description) > 100
-                                    ? substr(
+                            if (strlen($description) > 100) {
+
+                                $description =
+                                    substr(
                                         $description,
                                         0,
                                         100
-                                    ) . "..."
-                                    : $description,
+                                    ) . "...";
+
+                            }
+
+                            echo htmlspecialchars(
+                                $description,
                                 ENT_QUOTES,
-                                'UTF-8'
+                                "UTF-8"
                             );
 
                             ?>
@@ -277,6 +348,7 @@ $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 
                         <!-- Price -->
+
                         <div class="price">
 
                             ৳<?php
@@ -290,6 +362,7 @@ $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 
                         <!-- View Details -->
+
                         <a
                             class="btn"
                             href="product_details.php?id=<?php
@@ -299,9 +372,12 @@ $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
                             View Details
                         </a>
 
+
                     </div>
 
+
                 <?php endforeach; ?>
+
 
             <?php else: ?>
 
@@ -312,10 +388,12 @@ $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
             <?php endif; ?>
 
+
         </div>
 
 
         <!-- View All Products -->
+
         <a
             href="products.php"
             class="btn secondary-btn"
@@ -323,7 +401,9 @@ $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
             View All Products
         </a>
 
+
     </section>
+
 
 </main>
 
@@ -331,11 +411,16 @@ $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
 <footer>
 
     <p>
+
         &copy; <?php echo date("Y"); ?>
+
         Charuta. All rights reserved.
+
     </p>
 
 </footer>
 
+
 </body>
+
 </html>

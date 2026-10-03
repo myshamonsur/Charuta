@@ -1,17 +1,24 @@
 <?php
 
-session_start();
-require_once "includes/db.php";
+require_once __DIR__ . "/includes/session.php";
+require_once __DIR__ . "/includes/db.php";
+
 
 // User must be logged in
+
 if (!isset($_SESSION["user_id"])) {
+
     header("Location: login.php");
     exit;
+
 }
+
 
 $userId = (int) $_SESSION["user_id"];
 
+
 // Get cart items
+
 $stmt = $pdo->prepare("
     SELECT
         c.product_id,
@@ -21,25 +28,39 @@ $stmt = $pdo->prepare("
         p.image,
         p.stock
     FROM cart c
-    INNER JOIN products p ON c.product_id = p.id
+    INNER JOIN products p
+        ON c.product_id = p.id
     WHERE c.user_id = ?
     ORDER BY c.id DESC
 ");
 
 $stmt->execute([$userId]);
-$cartItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+$cartItems = $stmt->fetchAll(
+    PDO::FETCH_ASSOC
+);
+
 
 // If cart is empty
+
 if (!$cartItems) {
+
     header("Location: cart.php");
     exit;
+
 }
 
+
 // Calculate total
+
 $totalAmount = 0;
 
 foreach ($cartItems as $item) {
-    $totalAmount += (float) $item["price"] * (int) $item["quantity"];
+
+    $totalAmount +=
+        (float)$item["price"] *
+        (int)$item["quantity"];
+
 }
 
 ?>
@@ -48,14 +69,23 @@ foreach ($cartItems as $item) {
 <html lang="en">
 
 <head>
+
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
 
     <title>Checkout - Charuta</title>
 
-    <link rel="stylesheet" href="assets/css/style.css">
+    <link
+        rel="stylesheet"
+        href="assets/css/style.css"
+    >
 
     <style>
+
         .checkout-section {
             padding: 50px 20px;
         }
@@ -191,53 +221,89 @@ foreach ($cartItems as $item) {
         }
 
         @media (max-width: 768px) {
+
             .checkout-container {
                 grid-template-columns: 1fr;
             }
+
         }
+
     </style>
+
 </head>
+
 
 <body>
 
+
 <header>
+
     <div class="container">
 
         <div class="logo">
-    <a href="index.php">
-        <img
-            src="assets/images/Charuta_Logo.png"
-            alt="Charuta"
-            class="site-logo"
-        >
-    </a>
-</div>
+
+            <a href="index.php">
+
+                <img
+                    src="assets/images/Charuta_Logo.png"
+                    alt="Charuta"
+                    class="site-logo"
+                >
+
+            </a>
+
+        </div>
+
 
         <nav>
-            <a href="index.php">Home</a>
-            <a href="products.php">Products</a>
-            <a href="cart.php">Cart</a>
-            <a href="orders.php">Orders</a>
-            <a href="logout.php">Logout</a>
+
+            <a href="index.php">
+                Home
+            </a>
+
+            <a href="products.php">
+                Products
+            </a>
+
+            <a href="cart.php">
+                Cart
+            </a>
+
+            <a href="orders.php">
+                Orders
+            </a>
+
+            <a href="logout.php">
+                Logout
+            </a>
+
         </nav>
 
     </div>
+
 </header>
 
 
 <section class="checkout-section">
 
+
     <div class="checkout-container">
 
-        <!-- ========================= -->
+
         <!-- CUSTOMER INFORMATION -->
-        <!-- ========================= -->
 
         <div class="checkout-card">
 
-            <h2>Delivery Information</h2>
+            <h2>
+                Delivery Information
+            </h2>
 
-            <form action="place_order.php" method="POST">
+
+            <form
+                action="place_order.php"
+                method="POST"
+            >
+
 
                 <div class="form-group">
 
@@ -344,31 +410,39 @@ foreach ($cartItems as $item) {
                     ← Back to Cart
                 </a>
 
+
             </form>
 
         </div>
 
 
-        <!-- ========================= -->
         <!-- ORDER SUMMARY -->
-        <!-- ========================= -->
 
         <div class="checkout-card">
 
-            <h2>Order Summary</h2>
+            <h2>
+                Order Summary
+            </h2>
 
 
             <?php foreach ($cartItems as $item): ?>
 
+
                 <?php
 
                 $imageName = basename(
-                    trim((string)($item["image"] ?? ""))
+                    trim(
+                        (string)($item["image"] ?? "")
+                    )
                 );
 
-                $imagePath = __DIR__ . "/assets/images/" . $imageName;
+                $imagePath =
+                    __DIR__ .
+                    "/assets/images/" .
+                    $imageName;
 
-                $imageUrl = "assets/images/" .
+                $imageUrl =
+                    "assets/images/" .
                     rawurlencode($imageName);
 
                 $itemSubtotal =
@@ -377,7 +451,9 @@ foreach ($cartItems as $item) {
 
                 ?>
 
+
                 <div class="order-item">
+
 
                     <?php if (
                         $imageName !== "" &&
@@ -385,8 +461,20 @@ foreach ($cartItems as $item) {
                     ): ?>
 
                         <img
-                            src="<?php echo htmlspecialchars($imageUrl); ?>"
-                            alt="<?php echo htmlspecialchars($item["name"]); ?>"
+                            src="<?php
+                                echo htmlspecialchars(
+                                    $imageUrl,
+                                    ENT_QUOTES,
+                                    "UTF-8"
+                                );
+                            ?>"
+                            alt="<?php
+                                echo htmlspecialchars(
+                                    $item["name"],
+                                    ENT_QUOTES,
+                                    "UTF-8"
+                                );
+                            ?>"
                             class="order-item-image"
                         >
 
@@ -402,10 +490,17 @@ foreach ($cartItems as $item) {
                     <div class="order-item-info">
 
                         <div class="order-item-name">
+
                             <?php
-                            echo htmlspecialchars($item["name"]);
+                            echo htmlspecialchars(
+                                $item["name"],
+                                ENT_QUOTES,
+                                "UTF-8"
+                            );
                             ?>
+
                         </div>
+
 
                         <div class="order-item-price">
 
@@ -438,7 +533,9 @@ foreach ($cartItems as $item) {
 
                     </div>
 
+
                 </div>
+
 
             <?php endforeach; ?>
 
@@ -450,22 +547,28 @@ foreach ($cartItems as $item) {
                 </span>
 
                 <span>
+
                     <?php
                     echo number_format(
                         $totalAmount,
                         2
                     );
                     ?>
+
                 </span>
 
             </div>
 
+
         </div>
 
+
     </div>
+
 
 </section>
 
 
 </body>
+
 </html>

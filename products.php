@@ -1,11 +1,14 @@
 <?php
-session_start();
-require_once "includes/db.php";
+
+require_once __DIR__ . "/includes/session.php";
+require_once __DIR__ . "/includes/db.php";
 
 $search = trim($_GET["search"] ?? "");
 $category = trim($_GET["category"] ?? "all");
 
+
 // Fetch categories
+
 $categoryStmt = $pdo->query(
     "SELECT TRIM(category) AS category
      FROM products
@@ -15,40 +18,77 @@ $categoryStmt = $pdo->query(
      ORDER BY TRIM(category) ASC"
 );
 
-$categories = $categoryStmt->fetchAll(PDO::FETCH_COLUMN);
+$categories = $categoryStmt->fetchAll(
+    PDO::FETCH_COLUMN
+);
 
 
 // Build product query
-$sql = "SELECT id, name, category, description, price, stock, image
-        FROM products
-        WHERE 1=1";
+
+$sql = "
+    SELECT
+        id,
+        name,
+        category,
+        description,
+        price,
+        stock,
+        image
+    FROM products
+    WHERE 1=1
+";
 
 $params = [];
 
 
 // Search
+
 if ($search !== "") {
-    $sql .= " AND (name LIKE ? OR description LIKE ?)";
+
+    $sql .= "
+        AND (
+            name LIKE ?
+            OR description LIKE ?
+        )
+    ";
+
     $params[] = "%{$search}%";
     $params[] = "%{$search}%";
 }
 
 
 // Category filter
-if ($category !== "" && strtolower($category) !== "all") {
-    $sql .= " AND LOWER(TRIM(category)) = LOWER(TRIM(?))";
+
+if (
+    $category !== "" &&
+    strtolower($category) !== "all"
+) {
+
+    $sql .= "
+        AND LOWER(TRIM(category))
+        =
+        LOWER(TRIM(?))
+    ";
+
     $params[] = $category;
 }
 
 
 // Sort
+
 $sql .= " ORDER BY id DESC";
 
 
 // Execute query
+
 $stmt = $pdo->prepare($sql);
+
 $stmt->execute($params);
-$products = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+$products = $stmt->fetchAll(
+    PDO::FETCH_ASSOC
+);
+
 ?>
 
 <!DOCTYPE html>
@@ -58,11 +98,17 @@ $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     <meta charset="UTF-8">
 
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
 
     <title>Products | Charuta</title>
 
-    <link rel="stylesheet" href="assets/css/style.css">
+    <link
+        rel="stylesheet"
+        href="assets/css/style.css"
+    >
 
     <style>
 
@@ -83,6 +129,7 @@ $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
             height: 100%;
             object-fit: contain;
         }
+
 
         .search-form {
             display: flex;
@@ -108,6 +155,7 @@ $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
             white-space: nowrap;
         }
 
+
         .product-image {
             display: block;
             width: 100%;
@@ -117,6 +165,7 @@ $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
             border-radius: 10px;
             margin-bottom: 12px;
         }
+
 
         .product-placeholder {
             width: 100%;
@@ -130,9 +179,11 @@ $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
             color: #76515e;
         }
 
+
         .product-card {
             overflow: hidden;
         }
+
 
         @media (max-width: 600px) {
 
@@ -164,7 +215,10 @@ $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 <header>
 
-    <a href="index.php" class="brand-logo">
+    <a
+        href="index.php"
+        class="brand-logo"
+    >
 
         <img
             src="assets/images/Charuta_Logo.png"
@@ -176,24 +230,38 @@ $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     <nav>
 
-        <a href="index.php">Home</a>
+        <a href="index.php">
+            Home
+        </a>
 
-        <a href="products.php">Products</a>
+        <a href="products.php">
+            Products
+        </a>
 
 
         <?php if (isset($_SESSION["user_id"])): ?>
 
-            <a href="cart.php">Cart</a>
+            <a href="cart.php">
+                Cart
+            </a>
 
-            <a href="orders.php">My Orders</a>
+            <a href="orders.php">
+                My Orders
+            </a>
 
-            <a href="logout.php">Logout</a>
+            <a href="logout.php">
+                Logout
+            </a>
 
         <?php else: ?>
 
-            <a href="login.php">Login</a>
+            <a href="login.php">
+                Login
+            </a>
 
-            <a href="register.php">Register</a>
+            <a href="register.php">
+                Register
+            </a>
 
         <?php endif; ?>
 
@@ -202,15 +270,17 @@ $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
 </header>
 
 
-
 <main class="section">
 
-    <h2>Our Products</h2>
+
+    <h2>
+        Our Products
+    </h2>
+
 
     <p class="section-description">
         Find the right skincare products for your daily routine.
     </p>
-
 
 
     <form
@@ -223,7 +293,13 @@ $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
             type="search"
             name="search"
             placeholder="Search products..."
-            value="<?php echo htmlspecialchars($search, ENT_QUOTES, 'UTF-8'); ?>"
+            value="<?php
+                echo htmlspecialchars(
+                    $search,
+                    ENT_QUOTES,
+                    "UTF-8"
+                );
+            ?>"
         >
 
 
@@ -250,7 +326,13 @@ $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
             <?php foreach ($categories as $cat): ?>
 
                 <option
-                    value="<?php echo htmlspecialchars($cat, ENT_QUOTES, 'UTF-8'); ?>"
+                    value="<?php
+                        echo htmlspecialchars(
+                            $cat,
+                            ENT_QUOTES,
+                            "UTF-8"
+                        );
+                    ?>"
                     <?php
                     if (
                         strcasecmp(
@@ -267,7 +349,7 @@ $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
                     echo htmlspecialchars(
                         $cat,
                         ENT_QUOTES,
-                        'UTF-8'
+                        "UTF-8"
                     );
                     ?>
 
@@ -278,7 +360,10 @@ $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
         </select>
 
 
-        <button type="submit" class="btn">
+        <button
+            type="submit"
+            class="btn"
+        >
             Search
         </button>
 
@@ -290,8 +375,8 @@ $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
             Clear
         </a>
 
-    </form>
 
+    </form>
 
 
     <div class="product-grid">
@@ -301,6 +386,7 @@ $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 
             <?php foreach ($products as $product): ?>
+
 
                 <?php
 
@@ -332,16 +418,20 @@ $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
                         <img
                             class="product-image"
-                            src="<?php echo htmlspecialchars(
-                                $imageUrl,
-                                ENT_QUOTES,
-                                'UTF-8'
-                            ); ?>"
-                            alt="<?php echo htmlspecialchars(
-                                $product["name"],
-                                ENT_QUOTES,
-                                'UTF-8'
-                            ); ?>"
+                            src="<?php
+                                echo htmlspecialchars(
+                                    $imageUrl,
+                                    ENT_QUOTES,
+                                    "UTF-8"
+                                );
+                            ?>"
+                            alt="<?php
+                                echo htmlspecialchars(
+                                    $product["name"],
+                                    ENT_QUOTES,
+                                    "UTF-8"
+                                );
+                            ?>"
                             loading="lazy"
                         >
 
@@ -353,7 +443,7 @@ $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
                             echo htmlspecialchars(
                                 $product["category"] ?? "Product",
                                 ENT_QUOTES,
-                                'UTF-8'
+                                "UTF-8"
                             );
                             ?>
 
@@ -368,7 +458,7 @@ $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
                         echo htmlspecialchars(
                             $product["name"],
                             ENT_QUOTES,
-                            'UTF-8'
+                            "UTF-8"
                         );
                         ?>
 
@@ -383,7 +473,7 @@ $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
                         echo htmlspecialchars(
                             $product["category"] ?? "",
                             ENT_QUOTES,
-                            'UTF-8'
+                            "UTF-8"
                         );
                         ?>
 
@@ -411,7 +501,7 @@ $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
                         echo htmlspecialchars(
                             $description,
                             ENT_QUOTES,
-                            'UTF-8'
+                            "UTF-8"
                         );
 
                         ?>
@@ -435,7 +525,9 @@ $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
                     <p class="stock">
 
-                        <?php if ((int)$product["stock"] > 0): ?>
+                        <?php if (
+                            (int)$product["stock"] > 0
+                        ): ?>
 
                             In Stock:
                             <?php echo (int)$product["stock"]; ?>
@@ -451,7 +543,9 @@ $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
                     <a
                         class="btn"
-                        href="product_details.php?id=<?php echo (int)$product["id"]; ?>"
+                        href="product_details.php?id=<?php
+                            echo (int)$product["id"];
+                        ?>"
                     >
                         View Details
                     </a>
@@ -466,10 +560,8 @@ $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
         <?php else: ?>
 
             <p class="empty-message">
-
                 No products found.
                 Try another search or category.
-
             </p>
 
         <?php endif; ?>
@@ -477,8 +569,8 @@ $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     </div>
 
-</main>
 
+</main>
 
 
 <footer>

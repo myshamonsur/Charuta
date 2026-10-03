@@ -1,7 +1,8 @@
-
 <?php
-session_start();
+
+require_once "includes/session.php";
 require_once "includes/db.php";
+
 
 // Validate product ID
 if (
@@ -21,13 +22,18 @@ $stmt = $pdo->prepare(
      FROM products
      WHERE id = ?"
 );
+
 $stmt->execute([$productId]);
+
 $product = $stmt->fetch(PDO::FETCH_ASSOC);
 
 // Return 404 if product does not exist
 if (!$product) {
+
     http_response_code(404);
+
 } else {
+
     // Correct image path
     $imageName = basename(
         trim((string)($product["image"] ?? ""))
@@ -37,24 +43,44 @@ if (!$product) {
 
     $imageUrl = "assets/images/" . rawurlencode($imageName);
 }
+
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
+
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
 
     <title>
+
         <?php
+
         echo $product
-            ? htmlspecialchars($product["name"], ENT_QUOTES, "UTF-8") . " | Charuta"
+            ? htmlspecialchars(
+                $product["name"],
+                ENT_QUOTES,
+                "UTF-8"
+            ) . " | Charuta"
             : "Product Not Found | Charuta";
+
         ?>
+
     </title>
 
-    <link rel="stylesheet" href="assets/css/style.css">
+    <link
+        rel="stylesheet"
+        href="assets/css/style.css"
+    >
 
     <style>
+
         .details-section {
             max-width: 1100px;
             margin: 50px auto;
@@ -149,6 +175,7 @@ if (!$product) {
         }
 
         @media (max-width: 700px) {
+
             .details-card {
                 grid-template-columns: 1fr;
                 padding: 18px;
@@ -162,49 +189,76 @@ if (!$product) {
                 margin: 20px auto;
                 padding: 12px;
             }
+
         }
+
     </style>
+
 </head>
 
 <body>
 
 <header>
+
     <a href="index.php" class="brand-logo">
+
         <img
             src="assets/images/Charuta_Logo.png"
             alt="Charuta Beauty and Skincare"
         >
+
     </a>
 
     <nav>
+
         <a href="index.php">Home</a>
+
         <a href="products.php">Products</a>
 
         <?php if (isset($_SESSION["user_id"])): ?>
+
             <a href="cart.php">Cart</a>
+
             <a href="orders.php">My Orders</a>
+
             <a href="logout.php">Logout</a>
+
         <?php else: ?>
+
             <a href="login.php">Login</a>
+
             <a href="register.php">Register</a>
+
         <?php endif; ?>
+
     </nav>
+
 </header>
 
 <main>
+
     <section class="details-section">
 
         <?php if (!$product): ?>
 
             <div class="details-message">
-                <h2>Product Not Found</h2>
+
+                <h2>
+                    Product Not Found
+                </h2>
+
                 <p>
                     This product may have been removed
                     or does not exist.
                 </p>
-                <a href="products.php" class="btn">
+
+                <a
+                    href="products.php"
+                    class="btn"
+                >
                     Back to Products
                 </a>
+
             </div>
 
         <?php else: ?>
@@ -212,6 +266,7 @@ if (!$product) {
             <div class="details-card">
 
                 <!-- Product Image -->
+
                 <div class="details-image">
 
                     <?php if (
@@ -239,13 +294,17 @@ if (!$product) {
                     <?php else: ?>
 
                         <div class="details-placeholder">
+
                             <?php
+
                             echo htmlspecialchars(
                                 $product["category"] ?? "Product",
                                 ENT_QUOTES,
                                 "UTF-8"
                             );
+
                             ?>
+
                         </div>
 
                     <?php endif; ?>
@@ -253,30 +312,41 @@ if (!$product) {
                 </div>
 
                 <!-- Product Information -->
+
                 <div class="details-info">
 
                     <p class="details-category">
+
                         <?php
+
                         echo htmlspecialchars(
                             $product["category"] ?? "",
                             ENT_QUOTES,
                             "UTF-8"
                         );
+
                         ?>
+
                     </p>
 
                     <h1>
+
                         <?php
+
                         echo htmlspecialchars(
                             $product["name"],
                             ENT_QUOTES,
                             "UTF-8"
                         );
+
                         ?>
+
                     </h1>
 
                     <p class="details-description">
+
                         <?php
+
                         echo nl2br(
                             htmlspecialchars(
                                 $product["description"] ?? "",
@@ -284,26 +354,37 @@ if (!$product) {
                                 "UTF-8"
                             )
                         );
+
                         ?>
+
                     </p>
 
                     <div class="details-price">
+
                         ৳<?php
+
                         echo number_format(
                             (float)$product["price"],
                             2
                         );
+
                         ?>
+
                     </div>
 
                     <!-- Stock Information -->
+
                     <p class="stock-info">
 
                         <?php if ((int)$product["stock"] > 0): ?>
 
                             <span style="color: green;">
+
                                 In Stock
-                                (<?php echo (int)$product["stock"]; ?> available)
+                                (<?php
+                                    echo (int)$product["stock"];
+                                ?> available)
+
                             </span>
 
                         <?php else: ?>
@@ -317,17 +398,23 @@ if (!$product) {
                     </p>
 
                     <!-- Add to Cart -->
+
                     <?php if (
                         (int)$product["stock"] > 0 &&
                         isset($_SESSION["user_id"])
                     ): ?>
 
-                        <form action="add_to_cart.php" method="POST">
+                        <form
+                            action="add_to_cart.php"
+                            method="POST"
+                        >
 
                             <input
                                 type="hidden"
                                 name="product_id"
-                                value="<?php echo (int)$product["id"]; ?>"
+                                value="<?php
+                                    echo (int)$product["id"];
+                                ?>"
                             >
 
                             <label for="quantity">
@@ -341,13 +428,18 @@ if (!$product) {
                                 class="quantity-input"
                                 value="1"
                                 min="1"
-                                max="<?php echo (int)$product["stock"]; ?>"
+                                max="<?php
+                                    echo (int)$product["stock"];
+                                ?>"
                                 required
                             >
 
                             <div class="details-actions">
 
-                                <button type="submit" class="btn">
+                                <button
+                                    type="submit"
+                                    class="btn"
+                                >
                                     Add to Cart
                                 </button>
 
@@ -359,6 +451,7 @@ if (!$product) {
                                 </a>
 
                             </div>
+
                         </form>
 
                     <?php elseif (
@@ -366,7 +459,11 @@ if (!$product) {
                     ): ?>
 
                         <div class="details-actions">
-                            <a href="login.php" class="btn">
+
+                            <a
+                                href="login.php"
+                                class="btn"
+                            >
                                 Login to Add to Cart
                             </a>
 
@@ -376,6 +473,7 @@ if (!$product) {
                             >
                                 Continue Shopping
                             </a>
+
                         </div>
 
                     <?php else: ?>
@@ -390,19 +488,27 @@ if (!$product) {
                     <?php endif; ?>
 
                 </div>
+
             </div>
 
         <?php endif; ?>
 
     </section>
+
 </main>
 
 <footer>
+
     <p>
+
         &copy; <?php echo date("Y"); ?>
+
         Charuta. All rights reserved.
+
     </p>
+
 </footer>
 
 </body>
+
 </html>

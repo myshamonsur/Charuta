@@ -1,44 +1,64 @@
 <?php
-session_start();
+
+require_once "includes/session.php";
 require_once "includes/db.php";
 
+
+// --------------------------------------------------
 // User must be logged in
+// --------------------------------------------------
+
 if (!isset($_SESSION["user_id"])) {
     header("Location: login.php");
     exit;
 }
 
+
 $userId = (int)$_SESSION["user_id"];
 
-// Fetch cart items
+
+// --------------------------------------------------
+// Get cart items
+// --------------------------------------------------
+
 $stmt = $pdo->prepare(
     "SELECT
-        cart.id AS cart_id,
-        cart.quantity,
-        products.id AS product_id,
-        products.name,
-        products.price,
-        products.image,
-        products.stock
-     FROM cart
-     INNER JOIN products
-        ON cart.product_id = products.id
-     WHERE cart.user_id = ?
-     ORDER BY cart.id DESC"
+        ci.id AS cart_item_id,
+        ci.quantity,
+        p.id AS product_id,
+        p.name,
+        p.price,
+        p.image,
+        p.stock
+     FROM cart c
+     INNER JOIN cart_items ci
+        ON c.id = ci.cart_id
+     INNER JOIN products p
+        ON ci.product_id = p.id
+     WHERE c.user_id = ?
+     ORDER BY ci.id DESC"
 );
 
 $stmt->execute([$userId]);
 
-$cartItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$cartItems = $stmt->fetchAll();
+
+
+// --------------------------------------------------
+// Calculate total
+// --------------------------------------------------
 
 $total = 0;
 
 foreach ($cartItems as $item) {
+
     $total +=
         (float)$item["price"] *
         (int)$item["quantity"];
 }
+
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -46,125 +66,84 @@ foreach ($cartItems as $item) {
 
     <meta charset="UTF-8">
 
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
 
-    <title>My Cart | Charuta</title>
+    <title>Shopping Cart - Charuta</title>
 
-    <link
-        rel="stylesheet"
-        href="assets/css/style.css"
-    >
+    <link rel="stylesheet"
+          href="assets/css/style.css">
 
     <style>
 
-        .cart-section {
-            max-width: 1100px;
-            margin: 50px auto;
-            padding: 20px;
+        .cart-container {
+            max-width: 1000px;
+            margin: 40px auto;
         }
 
         .cart-title {
-            color: #713d56;
-            margin-bottom: 25px;
+            text-align: center;
+            margin-bottom: 30px;
         }
 
         .cart-item {
-            display: grid;
-            grid-template-columns: 120px 1fr auto;
-            gap: 20px;
+            display: flex;
             align-items: center;
-
-            background: #fff;
+            gap: 20px;
             padding: 20px;
             margin-bottom: 15px;
-
-            border-radius: 12px;
-
-            box-shadow:
-                0 4px 18px
-                rgba(0, 0, 0, 0.08);
-        }
-
-        .cart-image {
-            width: 120px;
-            height: 120px;
-            object-fit: contain;
-
-            background: #f9eaf0;
+            border: 1px solid #ddd;
             border-radius: 10px;
+            background: #fff;
         }
 
-        .cart-info h3 {
-            margin: 0 0 8px;
-            color: #713d56;
+        .cart-item img {
+            width: 110px;
+            height: 110px;
+            object-fit: contain;
+            border-radius: 8px;
         }
 
-        .cart-price {
-            color: #a64d78;
-            font-weight: bold;
+        .cart-item-info {
+            flex: 1;
         }
 
-        .cart-quantity {
-            margin-top: 10px;
+        .cart-item-info h3 {
+            margin-bottom: 10px;
         }
 
-        .cart-quantity input {
-            width: 70px;
-            padding: 8px;
-
-            border: 1px solid #d9b6c6;
-            border-radius: 6px;
+        .cart-item-info p {
+            margin: 5px 0;
         }
 
-        .cart-subtotal {
-            text-align: right;
-            font-weight: bold;
-            color: #713d56;
-        }
-
-        .cart-actions {
+        .cart-summary {
             margin-top: 30px;
             padding: 25px;
-
-            background: #fff;
-            border-radius: 12px;
-
-            box-shadow:
-                0 4px 18px
-                rgba(0, 0, 0, 0.08);
+            border-radius: 10px;
+            background: #f7f7f7;
+            text-align: right;
         }
 
         .cart-total {
-            font-size: 24px;
+            font-size: 22px;
             font-weight: bold;
-            color: #a64d78;
             margin-bottom: 20px;
         }
 
         .empty-cart {
-            background: #fff;
-            padding: 40px;
             text-align: center;
-            border-radius: 12px;
+            padding: 50px 20px;
+        }
+
+        .empty-cart p {
+            margin-bottom: 20px;
         }
 
         @media (max-width: 700px) {
 
             .cart-item {
-                grid-template-columns: 90px 1fr;
-            }
-
-            .cart-image {
-                width: 90px;
-                height: 90px;
-            }
-
-            .cart-subtotal {
-                grid-column: 2;
-                text-align: left;
+                flex-direction: column;
+                text-align: center;
             }
 
         }
@@ -173,246 +152,248 @@ foreach ($cartItems as $item) {
 
 </head>
 
+
 <body>
+
 
 <header>
 
-    <a
-        href="index.php"
-        class="brand-logo"
-    >
-        <img
-            src="assets/images/Charuta_Logo.png"
-            alt="Charuta Beauty and Skincare"
-        >
-    </a>
+    <div class="container nav-container">
 
-    <nav>
-
-        <a href="index.php">
-            Home
+        <a href="index.php" class="logo">
+            Charuta
         </a>
 
-        <a href="products.php">
-            Products
-        </a>
 
-        <a href="cart.php">
-            Cart
-        </a>
+        <nav>
 
-        <a href="orders.php">
-            My Orders
-        </a>
+            <a href="index.php">
+                Home
+            </a>
 
-        <a href="logout.php">
-            Logout
-        </a>
+            <a href="products.php">
+                Products
+            </a>
 
-    </nav>
+
+            <?php if (isset($_SESSION["user_id"])): ?>
+
+                <a href="cart.php">
+                    Cart
+                </a>
+
+                <a href="orders.php">
+                    My Orders
+                </a>
+
+                <a href="logout.php">
+                    Logout
+                </a>
+
+            <?php else: ?>
+
+                <a href="login.php">
+                    Login
+                </a>
+
+                <a href="register.php">
+                    Register
+                </a>
+
+            <?php endif; ?>
+
+        </nav>
+
+    </div>
 
 </header>
 
 
-<main>
+<main class="container">
 
-<section class="cart-section">
+    <div class="cart-container">
 
-    <h2 class="cart-title">
-        My Shopping Cart
-    </h2>
+        <h1 class="cart-title">
+            Shopping Cart
+        </h1>
 
 
-    <?php if (!empty($cartItems)): ?>
+        <?php if (empty($cartItems)): ?>
 
-        <?php foreach ($cartItems as $item): ?>
+            <div class="empty-cart">
 
-            <?php
+                <h2>
+                    Your cart is empty
+                </h2>
 
-            $imageName = basename(
-                trim(
-                    (string)($item["image"] ?? "")
-                )
-            );
+                <p>
+                    Add some products to your cart.
+                </p>
 
-            $imagePath =
-                __DIR__ .
-                "/assets/images/" .
-                $imageName;
+                <a
+                    href="products.php"
+                    class="btn"
+                >
+                    Continue Shopping
+                </a>
 
-            $imageUrl =
-                "assets/images/" .
-                rawurlencode($imageName);
+            </div>
 
-            $subtotal =
-                (float)$item["price"] *
-                (int)$item["quantity"];
 
-            ?>
+        <?php else: ?>
 
-            <div class="cart-item">
 
-                <?php if (
-                    $imageName !== "" &&
-                    is_file($imagePath)
-                ): ?>
+            <?php foreach ($cartItems as $item): ?>
 
-                    <img
-                        class="cart-image"
-                        src="<?php
-                            echo htmlspecialchars(
-                                $imageUrl,
+                <div class="cart-item">
+
+
+                    <?php
+
+                    $imagePath = "";
+
+                    if (!empty($item["image"])) {
+
+                        $imagePath =
+                            "assets/images/" .
+                            $item["image"];
+                    }
+
+                    ?>
+
+
+                    <?php if (
+                        !empty($imagePath) &&
+                        file_exists($imagePath)
+                    ): ?>
+
+                        <img
+                            src="<?php echo htmlspecialchars(
+                                $imagePath,
                                 ENT_QUOTES,
                                 "UTF-8"
-                            );
-                        ?>"
-                        alt="<?php
-                            echo htmlspecialchars(
+                            ); ?>"
+                            alt="<?php echo htmlspecialchars(
                                 $item["name"],
                                 ENT_QUOTES,
                                 "UTF-8"
-                            );
-                        ?>"
-                    >
+                            ); ?>"
+                        >
 
-                <?php else: ?>
-
-                    <div class="cart-image"></div>
-
-                <?php endif; ?>
+                    <?php endif; ?>
 
 
-                <div class="cart-info">
+                    <div class="cart-item-info">
 
-                    <h3>
-                        <?php
-                        echo htmlspecialchars(
-                            $item["name"],
-                            ENT_QUOTES,
-                            "UTF-8"
-                        );
-                        ?>
-                    </h3>
+                        <h3>
 
-                    <p class="cart-price">
-                        ৳<?php
-                        echo number_format(
-                            (float)$item["price"],
-                            2
-                        );
-                        ?>
-                    </p>
+                            <?php echo htmlspecialchars(
+                                $item["name"],
+                                ENT_QUOTES,
+                                "UTF-8"
+                            ); ?>
 
-                    <p class="cart-quantity">
+                        </h3>
 
-                        Quantity:
-                        <?php
-                        echo (int)$item["quantity"];
-                        ?>
 
-                    </p>
+                        <p>
+                            Price:
+                            ৳<?php echo number_format(
+                                (float)$item["price"],
+                                2
+                            ); ?>
+                        </p>
 
-                    <a
-                        href="remove_from_cart.php?id=<?php
-                            echo (int)$item["cart_id"];
-                        ?>"
-                        class="btn secondary-btn"
-                    >
-                        Remove
-                    </a>
+
+                        <p>
+                            Quantity:
+                            <?php echo (int)$item["quantity"]; ?>
+                        </p>
+
+
+                        <p>
+
+                            Subtotal:
+
+                            ৳<?php echo number_format(
+                                (float)$item["price"] *
+                                (int)$item["quantity"],
+                                2
+                            ); ?>
+
+                        </p>
+
+                    </div>
+
+
+                    <div>
+
+                        <a
+                            href="remove_from_cart.php?id=<?php echo (int)$item["cart_item_id"]; ?>"
+                            class="btn secondary-btn"
+                            onclick="return confirm('Remove this item from cart?');"
+                        >
+                            Remove
+                        </a>
+
+                    </div>
 
                 </div>
 
+            <?php endforeach; ?>
 
-                <div class="cart-subtotal">
 
-                    Subtotal
+            <div class="cart-summary">
 
-                    <br>
+                <div class="cart-total">
 
-                    ৳<?php
-                    echo number_format(
-                        $subtotal,
+                    Total:
+
+                    ৳<?php echo number_format(
+                        $total,
                         2
-                    );
-                    ?>
+                    ); ?>
 
                 </div>
 
+
+                <a
+                    href="products.php"
+                    class="btn secondary-btn"
+                >
+                    Continue Shopping
+                </a>
+
+
+                <a
+                    href="checkout.php"
+                    class="btn"
+                >
+                    Proceed to Checkout
+                </a>
+
             </div>
 
-        <?php endforeach; ?>
 
+        <?php endif; ?>
 
-        <div class="cart-actions">
-
-            <div class="cart-total">
-
-                Total:
-                ৳<?php
-                echo number_format(
-                    $total,
-                    2
-                );
-                ?>
-
-            </div>
-
-
-            <a
-                href="checkout.php"
-                class="btn"
-            >
-                Proceed to Checkout
-            </a>
-
-            <a
-                href="products.php"
-                class="btn secondary-btn"
-            >
-                Continue Shopping
-            </a>
-
-        </div>
-
-
-    <?php else: ?>
-
-        <div class="empty-cart">
-
-            <h2>
-                Your Cart is Empty
-            </h2>
-
-            <p>
-                Add some skincare products
-                to your cart first.
-            </p>
-
-            <a
-                href="products.php"
-                class="btn"
-            >
-                Browse Products
-            </a>
-
-        </div>
-
-    <?php endif; ?>
-
-</section>
+    </div>
 
 </main>
 
 
 <footer>
 
-    <p>
-        &copy; <?php echo date("Y"); ?>
-        Charuta. All rights reserved.
-    </p>
+    <div class="container">
+
+        <p>
+            &copy; 2026 Charuta. All rights reserved.
+        </p>
+
+    </div>
 
 </footer>
+
 
 </body>
 
